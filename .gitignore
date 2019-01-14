@@ -1,10 +1,13 @@
 # Data
-data
 buffer
 samples
 *.zip
 logs
 test*
+data/*
+!data/.exists
+models/*
+!models/.exists
 
 web/js/gen_layers.js
 

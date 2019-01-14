@@ -2,7 +2,7 @@
 Script to check whether images are corrupted. Without an argument, checks `data/wikiart/`. Otherwise checks 
 the `data/<dataset-name>`
 Usage: 
-    python check_images.py <dataset-name>
+    python3 validate_integrity.py <dataset-name>
     
     <dataset-name> : `data/<dataset-name>`
 '''

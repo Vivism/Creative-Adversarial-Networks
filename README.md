@@ -42,14 +42,18 @@ bash data/download_wikiart.sh
 
 Models can be downloaded from [Google Drive](https://drive.google.com/drive/folders/12r4dpxW5j1ouQbn51GkCoc-rcZjEZU1u?usp=sharing). They should be downloaded and extracted to the `/models` directory.
 
-## Training a CAN model from scratch (architecture used in the paper)
+## Generating Art using a CAN Model
+
+Always remember to run `pipenv shell` prior to executing other commands.
+
+### Model from scratch (architecture used in the paper)
 
 ```bash
 # must run from the root directory of the project
 bash experiments/train_can_paper.sh
 ```
 
-## Evaluating an existing CAN model
+### Evaluating an existing model
 
 ```bash
 # make sure that load_dir acts correctly

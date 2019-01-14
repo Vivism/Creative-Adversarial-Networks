@@ -30,9 +30,9 @@ pipenv install
 
 ### Getting the Dataset
 
-We used the [wikiart](https://www.wikiart.org/) dataset
-[available here](https://github.com/cs-chan/ICIP2016-PC/tree/f5d6f6b58a6d8a4bd05aaaedd9688d08c02df8f2/WikiArt%20Dataset).
-Using the dataset is subject to wikiart's [terms of use](https://www.wikiart.org/en/terms-of-use)
+We used the [WikiArt](https://www.wikiart.org/)
+[Dataset](https://github.com/cs-chan/ICIP2016-PC/tree/f5d6f6b58a6d8a4bd05aaaedd9688d08c02df8f2/WikiArt%20Dataset).
+Its usage is subject to WikiArts's [Terms of Use](https://www.wikiart.org/en/terms-of-use)
 
 ```bash
 bash data/download_wikiart.sh
@@ -40,7 +40,7 @@ bash data/download_wikiart.sh
 
 ### Getting pretrained models
 
-We uploaded all of our models to this [google drive folder](https://drive.google.com/open?id=1FNDxvpb_UY5MZ3zBnOOfGDQCXzeE7hbs)
+Models can be downloaded from [Google Drive](https://drive.google.com/drive/folders/12r4dpxW5j1ouQbn51GkCoc-rcZjEZU1u?usp=sharing).
 
 ## Training a CAN model from scratch (architecture used in the paper)
 
@@ -75,7 +75,7 @@ bash experiment/train_can_external_style.sh
 
 Everything you need should be included in the script. The gist is that it converts the wikiart images into tf records
 trains the last layer of the model on these images, then fine-tunes the entire model for 100 epochs, at the end of which
-you should get roughlyy 60% validation accuracy. Since we're looking to generate artwork, this gives us a
+you should get roughly 60% validation accuracy. Since we're looking to generate artwork, this gives us a
 level of accuracy that is sufficient to try and generate new artwork.
 
 ```bash

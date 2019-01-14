@@ -7,6 +7,7 @@ test*
 data/*
 !data/.exists
 !data/.sh
+!data/.py
 models/*
 !models/.exists
 !models/.sh

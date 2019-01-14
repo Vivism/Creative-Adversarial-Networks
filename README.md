@@ -56,7 +56,7 @@ bash experiments/train_can_paper.sh
 bash experiments/eval_can_paper.sh
 ```
 
-# External Style Classification network
+## External Style Classification network
 
 We ran an experiment where we trained an inception resnet to classify style (60% accuracy)
 and then used this for the style classification loss, removing the need to learn the layers
@@ -64,14 +64,14 @@ in the discriminator. We hold the style classification network constant, so the 
 doesn't change as the generator improves. We found that this improved the quality and diversity
 of our samples.
 
-## Training CAN with External Style Network
+### Training CAN with External Style Network
 
 ```bash
 # make sure that `style_net_checkpoint` is set correctly, or you will error out
 bash experiment/train_can_external_style.sh
 ```
 
-## Training the (ImageNet pre-trained) Inception Resnet
+### Training the (ImageNet pre-trained) Inception Resnet
 
 Everything you need should be included in the script. The gist is that it converts the wikiart images into tf records
 trains the last layer of the model on these images, then fine-tunes the entire model for 100 epochs, at the end of which
@@ -84,7 +84,7 @@ vim finetune_inception_resnet_v2_on_wikiart.sh # edit INPUT_DATASET_DIR to match
 bash finetune_inception_resnet_v2_on_wikiart.sh
 ```
 
-## Evaluating CAN with External Style Network
+### Evaluating CAN with External Style Network
 
 ```bash
 # make sure that `style_net_checkpoint` and `load_dir` point to the downloaded models.

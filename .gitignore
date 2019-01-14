@@ -6,8 +6,10 @@ logs
 test*
 data/*
 !data/.exists
+!data/.sh
 models/*
 !models/.exists
+!models/.sh
 
 web/js/gen_layers.js
 

@@ -1,6 +1,6 @@
 # Creative Adversarial Networks
 
-![collage](assets/256_external_collage.png =500x)
+![collage](assets/256_external_collage.png)
 
 _256x256 samples directly from CAN (no cherry picking) with fixed classification network trained on WikiArt_
 

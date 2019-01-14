@@ -40,7 +40,7 @@ bash data/download_wikiart.sh
 
 ### Getting pretrained models
 
-Models can be downloaded from [Google Drive](https://drive.google.com/drive/folders/12r4dpxW5j1ouQbn51GkCoc-rcZjEZU1u?usp=sharing).
+Models can be downloaded from [Google Drive](https://drive.google.com/drive/folders/12r4dpxW5j1ouQbn51GkCoc-rcZjEZU1u?usp=sharing). They should be downloaded and extracted to the `/models` directory.
 
 ## Training a CAN model from scratch (architecture used in the paper)
 

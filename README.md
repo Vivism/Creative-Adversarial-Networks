@@ -12,30 +12,46 @@ Repo based on [DCGAN-tensorflow](https://github.com/carpedm20/DCGAN-tensorflow).
 <!-- with modifications to reduce checkerboard artifacts according to [this -->
 <!-- distill article](https://distill.pub/2016/deconv-checkerboard/) -->
 
-## Getting the Dataset
+## Setup
+
+### Installation
+
+1. If you don't already have [Pipenv](https://pipenv.readthedocs.io/en/latest/) installed, install it.
+
+```bash
+brew install pipenv
+```
+
+2. Install the project's dependancies.
+
+```bash
+pipenv install
+```
+
+### Getting the Dataset
 
 We used the [wikiart](https://www.wikiart.org/) dataset
 [available here](https://github.com/cs-chan/ICIP2016-PC/tree/f5d6f6b58a6d8a4bd05aaaedd9688d08c02df8f2/WikiArt%20Dataset).
 Using the dataset is subject to wikiart's [terms of use](https://www.wikiart.org/en/terms-of-use)
 
-```
+```bash
 bash data/download_wikiart.sh
 ```
 
-## Getting pretrained models
+### Getting pretrained models
 
 We uploaded all of our models to this [google drive folder](https://drive.google.com/open?id=1FNDxvpb_UY5MZ3zBnOOfGDQCXzeE7hbs)
 
 ## Training a CAN model from scratch (architecture used in the paper)
 
-```
+```bash
 # must run from the root directory of the project
 bash experiments/train_can_paper.sh
 ```
 
 ## Evaluating an existing CAN model
 
-```
+```bash
 # make sure that load_dir acts correctly
 bash experiments/eval_can_paper.sh
 ```
@@ -50,7 +66,7 @@ of our samples.
 
 ## Training CAN with External Style Network
 
-```
+```bash
 # make sure that `style_net_checkpoint` is set correctly, or you will error out
 bash experiment/train_can_external_style.sh
 ```
@@ -62,7 +78,7 @@ trains the last layer of the model on these images, then fine-tunes the entire m
 you should get roughlyy 60% validation accuracy. Since we're looking to generate artwork, this gives us a
 level of accuracy that is sufficient to try and generate new artwork.
 
-```
+```bash
 cd slim/
 vim finetune_inception_resnet_v2_on_wikiart.sh # edit INPUT_DATASET_DIR to match the location of where you downloaded wikiart
 bash finetune_inception_resnet_v2_on_wikiart.sh
@@ -70,7 +86,7 @@ bash finetune_inception_resnet_v2_on_wikiart.sh
 
 ## Evaluating CAN with External Style Network
 
-```
+```bash
 # make sure that `style_net_checkpoint` and `load_dir` point to the downloaded models.
 bash eval_can_external_style.sh
 ```

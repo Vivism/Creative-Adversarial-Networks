@@ -2,7 +2,7 @@
 export PYTHONPATH="slim/:$PYTHONPATH"
 export CUDA_VISIBLE_DEVICES=0
 BATCH_SIZE=16
-python3 main.py \
+python3 src/main.py \
 --epoch 25 \
 --learning_rate .0001 \
 --beta 0.5 \

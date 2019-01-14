@@ -1,7 +1,7 @@
 # trains gan with an outside can network instead of having the discriminator learn style classification
 export PYTHONPATH="slim/:$PYTHONPATH"
 export CUDA_VISIBLE_DEVICES=1
-python3 main.py \
+python3 src/main.py \
 --epoch 25 \
 --learning_rate .0001 \
 --beta 0.5 \

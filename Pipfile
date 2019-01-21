@@ -19,6 +19,7 @@ jupyter = "*"
 pandas = "*"
 sympy = "*"
 nose = "*"
+"boto3" = "*"
 
 
 [requires]

@@ -26,6 +26,8 @@ brew install pipenv
 
 ```bash
 pipenv install
+pipenv shell
+python3 -m pip install --upgrade https://storage.googleapis.com/tensorflow/mac/cpu/tensorflow-1.3.0-py3-none-any.whl
 ```
 
 ### Getting the Dataset

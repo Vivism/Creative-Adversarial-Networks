@@ -13,7 +13,7 @@ python3 src/main.py \
 --use_resize True \
 --dataset wikiart \
 --input_fname_pattern */*.jpg \
---load_dir "logs/can_paper"
+--load_dir "logs/external_can_9_epochs"
 --crop False \
 --visualize False \
 --can True \

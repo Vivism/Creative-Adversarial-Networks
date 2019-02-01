@@ -118,16 +118,19 @@ def make_gif(images, fname, duration=2, true_image=False):
 
 def visualize(sess, dcgan, config, option):
   image_frame_dim = int(math.ceil(config.batch_size**.5))
+ 
   if option == 0:
     z_sample = np.random.normal(0, 1, size=(config.batch_size, dcgan.z_dim))
     z_sample /= np.linalg.norm(z_sample, axis=0)
     samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
-    save_images(samples, [image_frame_dim, image_frame_dim], './samples/test_%s.png' % strftime("%Y%m%d%H%M%S", gmtime()))
+    save_images(samples, [image_frame_dim, image_frame_dim], './../samples/test_%s.png' % strftime("%Y%m%d%H%M%S", gmtime()))
+  
   elif option == 1:
     values = np.arange(0, 1, 1./config.batch_size)
     for idx in xrange(100):
       print(" [*] %d" % idx)
       z_sample = np.zeros([config.batch_size, dcgan.z_dim])
+      
       for kdx, z in enumerate(z_sample):
         z[idx] = values[kdx]
 
@@ -135,15 +138,16 @@ def visualize(sess, dcgan, config, option):
         y = np.random.choice(10, config.batch_size)
         y_one_hot = np.zeros((config.batch_size, 10))
         y_one_hot[np.arange(config.batch_size), y] = 1
-
         samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample, dcgan.y: y_one_hot})
+
       elif config.dataset == 'wikiart':
         y = np.random.choice(27, config.batch_size)
         y_one_hot = np.zeros((config.batch_size, 27))
         y_one_hot[np.arange(config.batch_size), y] = 1
-
         samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample, dcgan.y: y_one_hot})
-      save_images(samples, [image_frame_dim, image_frame_dim], './samples/test_arange_%s.png' % (idx))
+
+      save_images(samples, [image_frame_dim, image_frame_dim], './../samples/test_arange_%s.png' % (idx))
+
   elif option == 2:
     values = np.arange(0, 1, 1./config.batch_size)
     for idx in [random.randint(0, 99) for _ in xrange(100)]:

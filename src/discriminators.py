@@ -8,7 +8,7 @@ def vanilla_can(model, image, reuse=False):
         if reuse:
             scope.reuse_variables()
         
-        h0 = lrelu(conv2d(image, model.df_dim, k_h=4, k_w=4, name='d_h0_conv',padding='VALID'))
+        h0 = lrelu(conv2d(image, model.df_dim, k_h=4, k_w=4, name='d_h0_conv', padding='VALID'))
         h1 = lrelu(model.d_bn1(conv2d(h0, model.df_dim*2, k_h=4, k_w=4, name='d_h1_conv', padding='VALID')))
         h2 = lrelu(model.d_bn2(conv2d(h1, model.df_dim*4, k_h=4, k_w=4, name='d_h2_conv', padding='VALID')))
         h3 = lrelu(model.d_bn3(conv2d(h2, model.df_dim*8, k_h=4, k_w=4, name='d_h3_conv', padding='VALID')))
@@ -125,6 +125,7 @@ def wgan_slim(model, image, reuse=False):
 
         out = linear(h2, 1, 'd_ro_lin')
         return out
+
 def dcwgan(model, image, reuse=False):
     with tf.variable_scope("discriminator") as scope:
         if reuse:

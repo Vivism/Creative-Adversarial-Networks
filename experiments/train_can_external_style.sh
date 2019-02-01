@@ -20,5 +20,5 @@ python3 src/main.py \
 --use_s3 False \
 --can True \
 --train False \
---load_dir "logs/can_external_style" \ 
+--load_dir "logs/can_external_style" \
 --style_net_checkpoint "logs/inception_resnet_v2/"

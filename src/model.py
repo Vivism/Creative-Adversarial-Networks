@@ -1,4 +1,5 @@
 from __future__ import division
+import re
 import os
 import time
 from glob import glob
@@ -15,14 +16,39 @@ from ops import *
 from utils import *
 from losses import *
 
-class DCGAN(object):
-  def __init__(self, sess, input_height=108, input_width=108, crop=True,
-         batch_size=64, sample_num = 64, output_height=64, output_width=64,
-         y_dim=None, z_dim=100, gf_dim=64, df_dim=32, smoothing=0.9, lamb = 1.0,
+from libs import aws
 
-         use_resize=False, replay=False, learning_rate = 1e-4, style_net_checkpoint=None,
-         gfc_dim=1024, dfc_dim=1024, c_dim=3, dataset_name='default',wgan=False, can=True,
-         input_fname_pattern='*.jpg', checkpoint_dir=None, sample_dir=None, old_model=False):
+class DCGAN(object):
+  def __init__(
+    self,
+    sess,
+    input_height=108,
+    input_width=108,
+    crop=True,
+    batch_size=64,
+    sample_num = 64,
+    output_height=64,
+    output_width=64,
+    y_dim=None,
+    z_dim=100,
+    gf_dim=64,
+    df_dim=32,
+    smoothing=0.9,
+    lamb = 1.0,
+    use_resize=False,
+    replay=False,
+    learning_rate = 1e-4,
+    style_net_checkpoint=None,
+    gfc_dim=1024,
+    dfc_dim=1024,
+    c_dim=3,
+    dataset_name='default',wgan=False,
+    can=True,
+    input_fname_pattern='*.jpg',
+    checkpoint_dir=None,
+    sample_dir=None,
+    old_model=False
+  ):
     """
 
     Args:
@@ -112,26 +138,51 @@ class DCGAN(object):
 
     self.build_model(old_model=old_model)
 
-  def upsample(self, input_, output_shape,
-        k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
-        name=None):
-    if self.use_resize:
-      return resizeconv(input_=input_, output_shape=output_shape,
-        k_h=k_h, k_w=k_w, d_h=d_h, d_w=d_w, name=(name or "resconv"))
+  def upsample(
+    self,
+    input_,
+    output_shape,
+    k_h=5,
+    k_w=5,
+    d_h=2,
+    d_w=2,
+    stddev=0.02,
+    name=None
+    ):
+      if self.use_resize:
+        return resizeconv(
+          input_=input_,
+          output_shape=output_shape,
+          k_h=k_h,
+          k_w=k_w,
+          d_h=d_h,
+          d_w=d_w,
+          name=(name or "resconv")
+        )
 
-    return deconv2d(input_=input_, output_shape=output_shape,
-        k_h=k_h, k_w=k_w, d_h=d_h, d_w=d_w, name= (name or "deconv2d"))
+      return deconv2d(
+        input_=input_,
+        output_shape=output_shape,
+        k_h=k_h,
+        k_w=k_w,
+        d_h=d_h,
+        d_w=d_w,
+        name= (name or "deconv2d")
+      )
+
   def make_style_net(self, images):
     with tf.device("/gpu:0"):
       network_fn = nets_factory.get_network_fn(
-          'inception_resnet_v2',
-          num_classes=27,
-          is_training=False)
+        'inception_resnet_v2',
+        num_classes=27,
+        is_training=False
+      )
       if images.shape[1:3] != (256, 256):
         images = tf.image.resize_images(images, [256, 256])
       logits, _ = network_fn(images)
       logits = tf.stop_gradient(logits)
       return logits
+
   def set_sess(self, sess):
     ''' set session to sess '''
     self.sess = sess
@@ -149,8 +200,13 @@ class DCGAN(object):
 
     self.inputs = tf.placeholder(
       tf.float32, [None] + image_dims, name='real_images')
+
     self.z = tf.placeholder(
-      tf.float32, [None, self.z_dim], name='z')
+      tf.float32,
+      [None, self.z_dim],
+      name='z'
+    )
+
     self.z_sum = histogram_summary("z", self.z)
 
     if self.wgan and not self.can:
@@ -163,18 +219,20 @@ class DCGAN(object):
         self.generator = generators.vanilla_wgan
         #TODO: write all this wcan stuff
         self.d_update, self.g_update, self.losses, self.sums = WCAN_loss(self)
+
     if not self.wgan and self.can:
         self.discriminator = discriminators.vanilla_can
         self.generator = generators.vanilla_can
         self.d_update, self.g_update, self.losses, self.sums = CAN_loss(self)
+
     elif not self.wgan and not self.can:
         #TODO: write the regular gan stuff
         self.d_update, self.g_update, self.losses, self.sums = GAN_loss(self)
 
     if self.can or not self.y_dim:
-        self.sampler            = self.generator(self, self.z, is_sampler=True)
+        self.sampler = self.generator(self, self.z, is_sampler=True)
     else:
-        self.sampler            = self.generator(self, self.z, self.y, is_sampler=True)
+        self.sampler = self.generator(self, self.z, self.y, is_sampler=True)
 
     t_vars = tf.trainable_variables()
     self.d_vars = [var for var in t_vars if 'd_' in var.name]
@@ -187,20 +245,22 @@ class DCGAN(object):
       self.style_net_saver = tf.train.Saver(var_list=style_net_vars)
     else:
       self.saver=tf.train.Saver()
+
   def train(self, config):
     try:
       tf.global_variables_initializer().run()
     except:
       tf.initialize_all_variables().run()
 
-
     self.log_dir = config.log_dir
 
     self.writer = SummaryWriter(self.log_dir, self.sess.graph)
 
-
-    sample_z = np.random.normal(0, 1, [self.sample_num, self.z_dim]) \
-              .astype(np.float32)
+    sample_z = np.random.normal(
+      0,
+      1,
+      [self.sample_num, self.z_dim]
+    ).astype(np.float32)
     sample_z /= np.linalg.norm(sample_z, axis=0)
 
     if config.dataset == 'mnist':
@@ -209,13 +269,16 @@ class DCGAN(object):
     elif self.y_dim:
       sample_files = self.data[0:self.sample_num]
       sample = [
-          get_image(sample_file,
-                    input_height=self.input_height,
-                    input_width=self.input_width,
-                    resize_height=self.output_height,
-                    resize_width=self.output_width,
-                    crop=self.crop,
-                    grayscale=self.grayscale) for sample_file in sample_files]
+          get_image(
+            sample_file,
+            input_height=self.input_height,
+            input_width=self.input_width,
+            resize_height=self.output_height,
+            resize_width=self.output_width,
+            crop=self.crop,
+            grayscale=self.grayscale
+          ) for sample_file in sample_files]
+
       if (self.grayscale):
         sample_inputs = np.array(sample).astype(np.float32)[:, :, :, None]
       else:
@@ -226,12 +289,13 @@ class DCGAN(object):
       sample_files = self.data[0:self.sample_num]
       sample = [
           get_image(sample_file,
-                    input_height=self.input_height,
-                    input_width=self.input_width,
-                    resize_height=self.output_height,
-                    resize_width=self.output_width,
-                    crop=self.crop,
-                    grayscale=self.grayscale) for sample_file in sample_files]
+            input_height=self.input_height,
+            input_width=self.input_width,
+            resize_height=self.output_height,
+            resize_width=self.output_width,
+            crop=self.crop,
+            grayscale=self.grayscale
+          ) for sample_file in sample_files]
       if (self.grayscale):
         sample_inputs = np.array(sample).astype(np.float32)[:, :, :, None]
       else:
@@ -246,14 +310,16 @@ class DCGAN(object):
       counter = checkpoint_counter
       if self.replay:
         replay_files = glob(os.path.join(self.model_dir + '_replay'))
-        self.experience_buffer =[
-                    get_image(sample_file,
-                    input_height=self.input_height,
-                    input_width=self.input_width,
-                    resize_height=self.output_height,
-                    resize_width=self.output_width,
-                    crop=self.crop,
-                    grayscale=self.grayscale) for sample_file in replay_files]
+        self.experience_buffer = [
+          get_image(sample_file,
+            input_height=self.input_height,
+            input_width=self.input_width,
+            resize_height=self.output_height,
+            resize_width=self.output_width,
+            crop=self.crop,
+            grayscale=self.grayscale
+          ) for sample_file in replay_files
+        ]
       print(" [*] Load SUCCESS")
       if loaded_sample_z is not None:
         sample_z = loaded_sample_z
@@ -510,7 +576,6 @@ class DCGAN(object):
             global_step=step)
 
     if config.use_s3:
-      import aws
       s3_dir = checkpoint_dir
       aws.upload_path(checkpoint_dir, config.s3_bucket, s3_dir)
       print('uploading log')
@@ -519,7 +584,6 @@ class DCGAN(object):
 
   def load_specific(self, checkpoint_dir):
     ''' like loading but takes in a directory directly'''
-    import re
     print(" [*] Reading checkpoints...")
 
     ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
@@ -533,8 +597,13 @@ class DCGAN(object):
       print(" [*] Failed to find a checkpoint")
       return False, 0
 
-  def load(self, checkpoint_dir, config, style_net_checkpoint_dir=None, use_last_checkpoint=True):
-    import re
+  def load(
+    self,
+    checkpoint_dir,
+    config,
+    style_net_checkpoint_dir=None,
+    use_last_checkpoint=True
+  ):
     print(" [*] Reading checkpoints...")
     if not config.use_default_checkpoint:
       checkpoint_dir = os.path.join(checkpoint_dir, self.model_dir)

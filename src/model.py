@@ -42,13 +42,13 @@ class DCGAN(object):
     gfc_dim=1024,
     dfc_dim=1024,
     c_dim=3,
-    dataset_name='default',
     wgan=False,
     can=True,
     input_fname_pattern='*.jpg',
     checkpoint_dir=None,
     sample_dir=None,
-    old_model=False
+    old_model=False,
+    sample_data_dir=''
   ):
     """
     Args:
@@ -65,7 +65,6 @@ class DCGAN(object):
     self.sess = sess
     self.crop = crop
 
-    self.dataset_name = dataset_name
     self.batch_size = batch_size
     self.sample_num = sample_num
 
@@ -114,25 +113,25 @@ class DCGAN(object):
     self.checkpoint_dir = checkpoint_dir
     self.experience_flag = False
 
-    if self.dataset_name == 'mnist':
-      self.data_X, self.data_y = self.load_mnist()
-      self.c_dim = self.data_X[0].shape[-1]
-    elif self.dataset_name == 'wikiart':
-      self.data = glob(os.path.join("./data", self.dataset_name, self.input_fname_pattern))
+    self.sample_data_dir = os.path.expanduser(sample_data_dir)
 
-      self.c_dim = 3
-      self.label_dict = {}
-      path_list = glob('./data/wikiart/**/', recursive=True)[1:]
-      for i, elem in enumerate(path_list):
-        print(elem[15:-1])
-        self.label_dict[elem[15:-1]] = i
-    else:
-      self.data = glob(os.path.join("./data", self.dataset_name, self.input_fname_pattern))
-      imreadImg = imread(self.data[0]);
-      if len(imreadImg.shape) >= 3: #check if image is a non-grayscale image by checking channel number
-        self.c_dim = imread(self.data[0]).shape[-1]
-      else:
-        self.c_dim = 1
+    # Dataset is Wikiart
+    data_path = os.path.join(self.sample_data_dir, self.input_fname_pattern)
+    self.data = glob(data_path)
+
+    # validate data
+    if len(self.data) is 0:
+      raise ValueError('Cannot find data in {}!!!!'.format(data_path))
+
+    self.c_dim = 3
+    self.label_dict = {}
+    labels_path = '{}/**/'.format(self.sample_data_dir)
+    path_list = glob(labels_path, recursive=True)[1:]
+    for i, elem in enumerate(path_list):
+      dirs = elem.split('/')
+      label = dirs[len(dirs)-2]
+      self.label_dict[label] = i
+
     self.experience_buffer=[]
     self.grayscale = (self.c_dim == 1)
 
@@ -247,6 +246,7 @@ class DCGAN(object):
       self.saver=tf.train.Saver()
 
   def train(self, config):
+    print(" [*] Training")
     try:
       tf.global_variables_initializer().run()
     except:
@@ -256,56 +256,36 @@ class DCGAN(object):
 
     self.writer = SummaryWriter(self.log_dir, self.sess.graph)
 
-    sample_z = np.random.normal(
-      0,
-      1,
-      [self.sample_num, self.z_dim]
-    ).astype(np.float32)
+    # generate random noise
+    sample_z = np.random.normal(0, 1, [self.sample_num, self.z_dim]).astype(np.float32)
     sample_z /= np.linalg.norm(sample_z, axis=0)
+    sample_files = self.data[0:self.sample_num]
+    sample = [
+        get_image(
+          sample_file,
+          input_height=self.input_height,
+          input_width=self.input_width,
+          resize_height=self.output_height,
+          resize_width=self.output_width,
+          crop=self.crop,
+          grayscale=self.grayscale
+        ) for sample_file in sample_files]
 
-    if config.dataset == 'mnist':
-      sample_inputs = self.data_X[0:self.sample_num]
-      sample_labels = self.data_y[0:self.sample_num]
-    elif self.y_dim:
-      sample_files = self.data[0:self.sample_num]
-      sample = [
-          get_image(
-            sample_file,
-            input_height=self.input_height,
-            input_width=self.input_width,
-            resize_height=self.output_height,
-            resize_width=self.output_width,
-            crop=self.crop,
-            grayscale=self.grayscale
-          ) for sample_file in sample_files]
-
-      if (self.grayscale):
-        sample_inputs = np.array(sample).astype(np.float32)[:, :, :, None]
-      else:
-        sample_inputs = np.array(sample).astype(np.float32)
-      sample_labels = self.get_y(sample_files)
-
+    if (self.grayscale):
+      sample_inputs = np.array(sample).astype(np.float32)[:, :, :, None]
     else:
-      sample_files = self.data[0:self.sample_num]
-      sample = [
-          get_image(sample_file,
-            input_height=self.input_height,
-            input_width=self.input_width,
-            resize_height=self.output_height,
-            resize_width=self.output_width,
-            crop=self.crop,
-            grayscale=self.grayscale
-          ) for sample_file in sample_files]
-      if (self.grayscale):
-        sample_inputs = np.array(sample).astype(np.float32)[:, :, :, None]
-      else:
-        sample_inputs = np.array(sample).astype(np.float32)
+      sample_inputs = np.array(sample).astype(np.float32)
+    
+    sample_labels = self.get_y(sample_files)
 
     counter = 1
     start_time = time.time()
-    could_load, checkpoint_counter, loaded_sample_z = self.load(self.checkpoint_dir,
-        config,
-        style_net_checkpoint_dir=self.style_net_checkpoint)
+    could_load, checkpoint_counter, loaded_sample_z = self.load(
+      self.checkpoint_dir,
+      config,
+      style_net_checkpoint_dir=self.style_net_checkpoint
+    )
+
     if could_load:
       counter = checkpoint_counter
       if self.replay:
@@ -327,44 +307,38 @@ class DCGAN(object):
       print(" [!] Load failed...")
 
     np.save(os.path.join(self.checkpoint_dir, 'sample_z'), sample_z)
+
     for epoch in xrange(config.epoch):
-      if config.dataset == 'mnist':
-        batch_idxs = min(len(self.data_X), config.train_size) // config.batch_size
-      else:
-        #self.data = glob(os.path.join(
-        # "./data", config.dataset, self.input_fname_pattern))
-        shuffle(self.data)
-        batch_idxs = min(len(self.data), config.train_size) // config.batch_size
+      print(" [{}] Training epoch".format(epoch))
+
+      shuffle(self.data)
+      batch_idxs = min(len(self.data), config.train_size) // config.batch_size
 
       for idx in xrange(0, batch_idxs):
         self.experience_flag = not bool(idx % 2)
 
-        if config.dataset == 'mnist':
-          batch_images = self.data_X[idx*config.batch_size:(idx+1)*config.batch_size]
-          batch_labels = self.data_y[idx*config.batch_size:(idx+1)*config.batch_size]
+        batch_files = self.data[idx*config.batch_size:(idx+1)*config.batch_size]
+        batch = [
+            get_image(batch_file,
+                      input_height=self.input_height,
+                      input_width=self.input_width,
+                      resize_height=self.output_height,
+                      resize_width=self.output_width,
+                      crop=self.crop,
+                      grayscale=self.grayscale) for batch_file in batch_files]
+        if self.grayscale:
+          batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
         else:
-          batch_files = self.data[idx*config.batch_size:(idx+1)*config.batch_size]
-          batch = [
-              get_image(batch_file,
-                        input_height=self.input_height,
-                        input_width=self.input_width,
-                        resize_height=self.output_height,
-                        resize_width=self.output_width,
-                        crop=self.crop,
-                        grayscale=self.grayscale) for batch_file in batch_files]
-          if self.grayscale:
-            batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
-          else:
-            batch_images = np.array(batch).astype(np.float32)
-          batch_labels = self.get_y(batch_files)
+          batch_images = np.array(batch).astype(np.float32)
+        batch_labels = self.get_y(batch_files)
 
         batch_z = np.random.normal(0, 1, [config.batch_size, self.z_dim]) \
               .astype(np.float32)
         batch_z /= np.linalg.norm(batch_z, axis=0)
 
         if self.can:
-        #update D
-
+          
+          # update Discriminator
           _, summary_str = self.sess.run([self.d_update, self.sums[0]],
             feed_dict={
               self.inputs: batch_images,
@@ -372,14 +346,16 @@ class DCGAN(object):
               self.y: batch_labels,
             })
           self.writer.add_summary(summary_str,counter)
-        #Update G: don't need labels or inputs
+          
+          # update Generator -- don't need labels or inputs
           _, summary_str = self.sess.run([self.g_update, self.sums[1]],
             feed_dict={
               self.z: batch_z,
 
             })
           self.writer.add_summary(summary_str, counter)
-          #do we need self.y for these two?
+          
+          # do we need self.y for these two?
           errD_fake = self.d_loss_fake.eval({
               self.z: batch_z,
               self.y:batch_labels
@@ -483,31 +459,19 @@ class DCGAN(object):
 
         if np.mod(counter, config.sample_itr) == 1:
 
-          if config.dataset == 'mnist' or config.dataset == 'wikiart':
-            samples = self.sess.run(
-              self.sampler,
-              feed_dict={
-                  self.z: sample_z,
-                  self.inputs: sample_inputs,
-                  self.y:sample_labels,
-              }
-            )
-            save_images(samples, image_manifold_size(samples.shape[0]),
-                  './{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
-          else:
-            try:
-              samples, d_loss, g_loss = self.sess.run(
-                [self.sampler, self.d_loss, self.g_loss],
-                feed_dict={
-                    self.z: sample_z,
-                    self.inputs: sample_inputs,
-                },
-              )
-              save_images(samples, image_manifold_size(samples.shape[0]),
-                    './{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
-              print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
-            except:
-              print("one pic error!...")
+          samples = self.sess.run(
+            self.sampler,
+            feed_dict={
+                self.z: sample_z,
+                self.inputs: sample_inputs,
+                self.y:sample_labels,
+            }
+          )
+          save_images(
+            samples,
+            image_manifold_size(samples.shape[0]),
+            './{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx)
+          )
 
         if np.mod(counter, config.save_itr) == 2:
           self.save(config.checkpoint_dir, counter, config)
@@ -516,52 +480,15 @@ class DCGAN(object):
   def get_y(self, sample_inputs):
     ret = []
     for sample in sample_inputs:
-      _, _, _, lab_str, _ = sample.split('/', 4)
-      ret.append(np.eye(self.y_dim)[np.array(self.label_dict[lab_str])])
+      directories = sample.split('/')
+      # assume the label is the file's parent directory
+      label = directories[len(directories) - 2]
+      ret.append(np.eye(self.y_dim)[np.array(self.label_dict[label])])
     return ret
-
-  def load_mnist(self):
-    data_dir = os.path.join("./data", self.dataset_name)
-
-    fd = open(os.path.join(data_dir,'train-images-idx3-ubyte'))
-    loaded = np.fromfile(file=fd,dtype=np.uint8)
-    trX = loaded[16:].reshape((60000,28,28,1)).astype(np.float)
-
-    fd = open(os.path.join(data_dir,'train-labels-idx1-ubyte'))
-    loaded = np.fromfile(file=fd,dtype=np.uint8)
-    trY = loaded[8:].reshape((60000)).astype(np.float)
-
-    fd = open(os.path.join(data_dir,'t10k-images-idx3-ubyte'))
-    loaded = np.fromfile(file=fd,dtype=np.uint8)
-    teX = loaded[16:].reshape((10000,28,28,1)).astype(np.float)
-
-    fd = open(os.path.join(data_dir,'t10k-labels-idx1-ubyte'))
-    loaded = np.fromfile(file=fd,dtype=np.uint8)
-    teY = loaded[8:].reshape((10000)).astype(np.float)
-
-    trY = np.asarray(trY)
-    teY = np.asarray(teY)
-
-    X = np.concatenate((trX, teX), axis=0)
-    y = np.concatenate((trY, teY), axis=0).astype(np.int)
-
-    seed = 547
-    np.random.seed(seed)
-    np.random.shuffle(X)
-    np.random.seed(seed)
-    np.random.shuffle(y)
-
-    y_vec = np.zeros((len(y), self.y_dim), dtype=np.float)
-    for i, label in enumerate(y):
-      y_vec[i,y[i]] = 1.0
-
-    return X/255.,y_vec
 
   @property
   def model_dir(self):
-    return "{}_{}_{}_{}".format(
-        self.dataset_name, self.batch_size,
-        self.output_height, self.output_width)
+    return "./models"
 
   def save(self, checkpoint_dir, step, config):
     model_name = "DCGAN.model"
@@ -612,20 +539,17 @@ class DCGAN(object):
       ckpt = tf.train.get_checkpoint_state(style_net_checkpoint_dir)
       if not ckpt:
         raise ValueError('style_net_checkpoint_dir points to wrong directory/model doesn\'t exist')
-      ckpt_name = os.path.join(style_net_checkpoint_dir, os.path.basename(ckpt.model_checkpoint_path))
+      ckpt_name = os.path.join(style_net_Fcheckpoint_dir, os.path.basename(ckpt.model_checkpoint_path))
       self.style_net_saver.restore(self.sess, tf.train.latest_checkpoint(style_net_checkpoint_dir))
 
-    # finds teh checkpoint
+    # finds the checkpoint
     if config.use_default_checkpoint and use_last_checkpoint:
-      def get_parent_path(path):
-        return os.path.normpath(os.path.join(path, os.pardir))
       path = get_parent_path(get_parent_path( checkpoint_dir))
       #find the high checkpoint path in a path
       files_in_path = sorted(os.listdir(path))
 
       if len(files_in_path) > 1:
         last_ = files_in_path[-2]
-
         checkpoint_dir  = os.path.join(path, last_, 'checkpoint')
       else:
         checkpoint_dir = None
@@ -633,23 +557,24 @@ class DCGAN(object):
     if config.load_dir:
       checkpoint_dir = config.load_dir
 
-    ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
-    if ckpt and ckpt.model_checkpoint_path:
-      ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
-      self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
-      counter = int(next(re.finditer("(\d+)(?!.*\d)",ckpt_name)).group(0))
-      print(" [*] Success to read {}".format(ckpt_name))
-      if os.path.exists(os.path.join(checkpoint_dir, 'sample_z.npy')):
-        print(" [*] Success to read sample_z in {}".format(ckpt_name))
-        sample_z = np.load(os.path.join(checkpoint_dir, 'sample_z.npy'))
-      else:
-        print(" [*] Failed to find a sample_z")
-        sample_z = None
-      return True, counter, sample_z
-    elif config.load_dir:
-      raise ValueError(" [*] Failed to find the load_dir")
-    else:
-      print(" [*] Failed to find a checkpoint")
-      return False, 0, None
+    if checkpoint_dir:
+      ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
+      if ckpt and ckpt.model_checkpoint_path:
+        ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+        self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
+        counter = int(next(re.finditer("(\d+)(?!.*\d)",ckpt_name)).group(0))
+        print(" [*] Success to read {}".format(ckpt_name))
+        if os.path.exists(os.path.join(checkpoint_dir, 'sample_z.npy')):
+          print(" [*] Success to read sample_z in {}".format(ckpt_name))
+          sample_z = np.load(os.path.join(checkpoint_dir, 'sample_z.npy'))
+        else:
+          print(" [*] Failed to find a sample_z")
+          sample_z = None
+        return True, counter, sample_z
+      elif config.load_dir:
+        raise ValueError(" [*] Failed to find the load_dir")
+
+    print(" [*] Failed to find a checkpoint")
+    return False, 0, None
 
 

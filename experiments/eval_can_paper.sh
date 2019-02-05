@@ -11,7 +11,6 @@ python3 src/main.py \
 --lambda_val 1.0 \
 --smoothing 1.0 \
 --use_resize True \
---dataset wikiart \
 --input_fname_pattern */*.jpg \
 --load_dir "logs/external_can_9_epochs"
 --crop False \

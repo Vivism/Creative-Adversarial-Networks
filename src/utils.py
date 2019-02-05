@@ -1,7 +1,5 @@
-"""
-Some codes from https://github.com/Newmu/dcgan_code
-"""
 from __future__ import division
+import os
 import math
 import json
 import random
@@ -151,7 +149,7 @@ def visualize(sess, dcgan, config):
     z_sample = np.random.normal(0, 1, size=(config.batch_size, dcgan.z_dim))
     z_sample /= np.linalg.norm(z_sample, axis=0)
     samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
-    path = './../samples/test_%s.png' % strftime("%Y%m%d%H%M%S", gmtime())
+    path = './samples/test_%s.png' % strftime("%Y%m%d%H%M%S", gmtime())
     save_images(samples, [image_frame_dim, image_frame_dim], path)
 
 
@@ -170,3 +168,7 @@ def image_manifold_size(num_images):
     manifold_w = int(np.ceil(np.sqrt(num_images)))
     assert manifold_h * manifold_w == num_images
     return manifold_h, manifold_w
+
+
+def get_parent_path(path):
+    return os.path.normpath(os.path.join(path, os.pardir))

@@ -65,11 +65,14 @@ def CAN_loss(model):
     # if classifier is set, then use the classifier,
     # otherwise use the clasification layers in the discriminator
     ls = ( 1.0 / model.y_dim ) * tf.ones_like(model.D_c_)
+
     if model.style_net_checkpoint is None:
-        tensor = tf.nn.softmax_cross_entropy_with_logits(logits=model.D_c_logits_, ls=ls)
+        logits = model.D_c_logits_
     else:
         model.classifier = model.make_style_net(model.G)
-        tensor = tf.nn.softmax_cross_entropy_with_logits(logits=model.classifier, labels=ls)
+        logits = model.classifier
+    
+    tensor = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=ls)
     
     model.g_loss_class_fake = tf.reduce_mean(input_tensor=tensor)
 

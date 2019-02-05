@@ -13,7 +13,6 @@ python3 src/main.py \
 --dataset wikiart \
 --input_fname_pattern */*.jpg \
 --crop False \
---visualize False \
 --use_s3 False \
 --can True \
 --train \

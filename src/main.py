@@ -4,7 +4,7 @@ import numpy as np
 from glob import glob
 
 from model import DCGAN
-from utils import pp, visualize, show_all_variables
+from utils import pp, show_all_variables
 
 import tensorflow as tf
 from slim.nets import nets_factory
@@ -34,7 +34,6 @@ flags.DEFINE_string("sample_dir", None, "Directory name to save the image sample
 flags.DEFINE_string("load_dir", None, "Directory that specifies checkpoint to load")
 flags.DEFINE_boolean("train", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("crop", False, "True for training, False for testing [False]")
-flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
 flags.DEFINE_boolean("wgan", False, "True if WGAN, False if regular [G/C]AN [False]")
 flags.DEFINE_boolean("can", True, "True if CAN, False if regular GAN [True]")
 flags.DEFINE_boolean("use_s3", False, "True if you want to use s3 buckets, False if you don't. Need to set s3_bucket if True.")
@@ -156,8 +155,7 @@ def main(_):
         #   if not dcgan.load(FLAGS.checkpoint_dir)[0]:
         #     raise Exception("[!] Train a model first, then run test mode")
 
-        OPTION = 0
-        visualize(sess, dcgan, FLAGS, OPTION)
+        visualize(sess, dcgan, FLAGS)
 
 if __name__ == '__main__':
     tf.app.run()

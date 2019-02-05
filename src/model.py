@@ -42,7 +42,8 @@ class DCGAN(object):
     gfc_dim=1024,
     dfc_dim=1024,
     c_dim=3,
-    dataset_name='default',wgan=False,
+    dataset_name='default',
+    wgan=False,
     can=True,
     input_fname_pattern='*.jpg',
     checkpoint_dir=None,
@@ -50,7 +51,6 @@ class DCGAN(object):
     old_model=False
   ):
     """
-
     Args:
       sess: TensorFlow session
       batch_size: The size of batch. Should be specified before training.

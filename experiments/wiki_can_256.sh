@@ -15,6 +15,5 @@ python3 src/main.py \
 --checkpoint_dir checkpoint \
 --sample_dir samples \
 --crop False \
---visualize False \
 --can True \
 --train \

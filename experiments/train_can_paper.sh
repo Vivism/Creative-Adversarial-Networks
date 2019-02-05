@@ -14,6 +14,5 @@ python3 src/main.py \
 --dataset wikiart \
 --input_fname_pattern */*.jpg \
 --crop False \
---visualize False \
 --can True \
 --train \

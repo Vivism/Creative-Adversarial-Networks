@@ -15,6 +15,5 @@ python3 src/main.py \
 --input_fname_pattern */*.jpg \
 --load_dir "logs/external_can_9_epochs"
 --crop False \
---visualize False \
 --can True \
 --train False

@@ -20,6 +20,7 @@ pandas = "*"
 sympy = "*"
 nose = "*"
 "boto3" = "*"
+ipdb = "*"
 
 
 [requires]
